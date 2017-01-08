@@ -10,32 +10,53 @@ out_pin -> LED (long leg) -> LED (short leg) ->
 IR Receiver input:
 signal wire -> (10kOhm resistor if no internal pullup)  -> in_pin
 """
-
-import RPi.GPIO as GPIO
 from datetime import datetime
-import resettingtimer as rt
+from time import sleep
+import RPi.GPIO as GPIO
+import hondetector.resettingtimer as rt
 
-GPIO.setmode(GPIO.BOARD)
 
-in_channels = [15] # IR receiver
-out_channels = [16] # LED indicating passage
+def blink_once():
+    """TODO: don't sleep? And NB I hardcoded the GPIO output..."""
+    GPIO.output(16, GPIO.HIGH)
+    sleep(0.2)
+    GPIO.output(16, GPIO.LOW)
 
-GPIO.setup(in_channels, GPIO.IN, pull_up_down = GPIO.PUD_UP)
-GPIO.setup(out_channels, GPIO.OUT, pull_up_down = GPIO.PUD_DOWN) 
-
-def all_ok(channel, timer):
+def all_ok(timer):
+    """Resets countdown timer"""
     timer.reset()
-    print('All good at time: ' + str(datetime.now()))
+    print 'All good at time: ' + str(datetime.now())
+    blink_once()
 
 def fire_warning():
-    print('No activity recently. Fired at: ' + str(datetime.now()))
+    """Only fires after timer interval"""
+    print 'No activity recently. Fired at: ' + str(datetime.now())
 
-t = rt.ResettingTimer(60 * 8, fire_warning)
-
-GPIO.add_event_detect(in_channels, GPIO.RISING,
-                      callback = all_ok, 
-                      bouncetime = 200)
 
 # spin our wheels
-while True:
-    pass
+if __name__ == '__main__':
+    GPIO.setmode(GPIO.BOARD)
+
+    in_channels = [15] # IR receiver
+    out_channels = [16] # LED indicating passage
+
+    GPIO.setup(in_channels, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+    GPIO.setup(out_channels, GPIO.OUT, pull_up_down = GPIO.PUD_DOWN) 
+
+
+    #lame-o way of getting around not passing extra args to callback
+    callback = lambda channel, tm=timer: all_ok(tm)
+    GPIO.add_event_detect(in_channels, GPIO.RISING,
+                          callback=callback,
+                          bouncetime=200)
+    
+    timer = rt.ResettingTimer(60 * 8, fire_warning)
+    timer.start()
+
+    try:
+        while True:
+            pass
+    except KeyboardInterrupt:
+        pass
+
+    GPIO.cleanup()

@@ -1,11 +1,12 @@
 
-from threading import timer
+from threading import Timer
 
 class ResettingTimer(object):
-"""
-Resettable timer modified from 
-http://stackoverflow.com/questions/24072765/timer-cannot-restart-after-it-is-being-stopped-in-python
-"""
+    """
+    Resettable timer modified from
+    http://stackoverflow.com/questions/24072765/timer-cannot-restart-after-it-is-being-stopped-in-python
+    """
+
     def __init__(self, interval, f, *args, **kwargs):
         self.interval = interval
         self.f = f
@@ -28,4 +29,3 @@ http://stackoverflow.com/questions/24072765/timer-cannot-restart-after-it-is-bei
     def reset(self):
         self.cancel()
         self.start()
-
