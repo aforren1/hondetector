@@ -33,7 +33,6 @@ def fire_warning():
     print 'No activity recently. Fired at: ' + str(datetime.now())
 
 
-# spin our wheels
 if __name__ == '__main__':
     GPIO.setmode(GPIO.BOARD)
 
@@ -45,6 +44,7 @@ if __name__ == '__main__':
 
 
     #lame-o way of getting around not passing extra args to callback
+    #
     callback = lambda channel, tm=timer: all_ok(tm)
     GPIO.add_event_detect(in_channels, GPIO.RISING,
                           callback=callback,
@@ -54,6 +54,7 @@ if __name__ == '__main__':
     timer.start()
 
     try:
+        # spin wheels unless ctrl+c
         while True:
             pass
     except KeyboardInterrupt:
