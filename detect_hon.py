@@ -11,10 +11,11 @@ IR Receiver input:
 signal wire -> (10kOhm resistor if no internal pullup)  -> in_pin
 """
 from datetime import datetime
+import schedule
+import numpy as np
+import pandas as pd
 from time import sleep
 import RPi.GPIO as GPIO
-import hondetector.resettingtimer as rt
-
 
 def blink_once():
     """TODO: don't sleep? And NB I hardcoded the GPIO output..."""
@@ -22,15 +23,31 @@ def blink_once():
     sleep(0.2)
     GPIO.output(16, GPIO.LOW)
 
-def all_ok(timer):
-    """Resets countdown timer"""
-    timer.reset()
-    print 'All good at time: ' + str(datetime.now())
+def record_event(evt_log):
+    """Logs events"""
+    dt = datetime.now()
+    evt_log = evt_log.append({'evtname': 'hondetected', 'evttime':np.datetime64(dt)}, ignore_index=True)
+    print 'All good at time: ' + str(dt)
     blink_once()
+    return evt_log
+
+def check_times(evt_log):
+    """Check recent times for activity"""
+    pass
+
 
 def fire_warning():
     """Only fires after timer interval"""
     print 'No activity recently. Fired at: ' + str(datetime.now())
+
+def reset_events(evt_log=event_log):
+    """Clear events for the day"""
+    evt_log = pd.DataFrame()
+    return evt_log
+
+def write_events_elsewhere(evt_log=event_log):
+    """Write events to somewhere external?"""
+    pass
 
 
 if __name__ == '__main__':
@@ -45,18 +62,21 @@ if __name__ == '__main__':
 
     #lame-o way of getting around not passing extra args to callback
     #
-    callback = lambda channel, tm=timer: all_ok(tm)
+    callback = lambda channel, event_log=log_today: record_event(event_log)
     GPIO.add_event_detect(in_channels, GPIO.RISING,
                           callback=callback,
                           bouncetime=200)
-    
-    timer = rt.ResettingTimer(60 * 8, fire_warning)
-    timer.start()
+
+    event_log = pd.DataFrame()
+
+    schedule.every().day.at("24:00").do(reset_events, evt_log=event_log)
+    schedule.every().minute.do(write_events_elsewhere, evt_log=event_log)
 
     try:
         # spin wheels unless ctrl+c
         while True:
-            pass
+            schedule.run_pending()
+            sleep(1)
     except KeyboardInterrupt:
         pass
 
