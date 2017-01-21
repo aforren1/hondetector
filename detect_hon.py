@@ -12,10 +12,15 @@ signal wire -> (10kOhm resistor if no internal pullup)  -> in_pin
 """
 from datetime import datetime
 from time import sleep
+import csv
 import schedule
-import numpy as np
-import pandas as pd
 import RPi.GPIO as GPIO
+
+def get_last_row(filename):
+    with open(filename, 'r') as f:
+        lastrow = None
+        for lastrow in csv.reader(f): pass
+        return lastrow
 
 def blink_once():
     """TODO: don't sleep? And NB I hardcoded the GPIO output..."""
@@ -24,31 +29,20 @@ def blink_once():
     GPIO.output(23, GPIO.LOW)
 
 def record_event(evt_log):
-    """Logs events"""
+    """Logs events; write immediately to file"""
     dt = datetime.now()
-    evt_log = evt_log.append({'evtname': 'hondetected', 'evttime':np.datetime64(dt)}, ignore_index=True)
     print 'All good at time: ' + str(dt)
-    blink_once()
+    # blink_once()
     return evt_log
 
 def check_times(evt_log):
-    """Check recent times for activity"""
+    """Read most recent line of log, and see if it was within the last 4 hrs"""
     pass
 
 
 def fire_warning():
     """Only fires after timer interval"""
     print 'No activity recently. Fired at: ' + str(datetime.now())
-
-def reset_events(evt_log=event_log):
-    """Clear events for the day"""
-    evt_log = pd.DataFrame()
-    return evt_log
-
-def write_events_elsewhere(evt_log=event_log):
-    """Write events to somewhere external?"""
-    pass
-
 
 if __name__ == '__main__':
     GPIO.setmode(GPIO.BCM)
@@ -59,7 +53,6 @@ if __name__ == '__main__':
     GPIO.setup(in_channels, GPIO.IN, pull_up_down = GPIO.PUD_UP)
     GPIO.setup(out_channels, GPIO.OUT, pull_up_down = GPIO.PUD_DOWN) 
 
-
     #lame-o way of getting around not passing extra args to callback
     #
     callback = lambda channel, event_log=log_today: record_event(event_log)
@@ -67,9 +60,8 @@ if __name__ == '__main__':
                           callback=callback,
                           bouncetime=200)
 
-    event_log = pd.DataFrame()
+    event_log = []
 
-    schedule.every().day.at("24:00").do(reset_events, evt_log=event_log)
     schedule.every().minute.do(write_events_elsewhere, evt_log=event_log)
 
     try:
