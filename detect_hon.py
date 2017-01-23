@@ -10,7 +10,7 @@ out_pin -> LED (long leg) -> LED (short leg) ->
 IR Receiver input:
 signal wire -> (10kOhm resistor if no internal pullup)  -> in_pin
 """
-import os.path
+import os
 from datetime import datetime
 from time import sleep
 import csv
@@ -50,7 +50,9 @@ def fire_warning():
 if __name__ == '__main__':
 
     file_name = 'logs/honlog.csv'
-
+    if not os.path.isdir('logs'):
+        os.makedirs('logs')
+    
     if not os.path.isfile(file_name):
         with open(file_name, 'w') as new_log:
             new_writer = csv.writer(new_log)
