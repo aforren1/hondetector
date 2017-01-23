@@ -16,11 +16,11 @@ import csv
 import schedule
 import RPi.GPIO as GPIO
 
-def get_last_row(filename):
-    with open(filename, 'r') as f:
+def get_last_row_time(file_name):
+    with open(file_name, 'r') as f:
         lastrow = None
         for lastrow in csv.reader(f): pass
-        return lastrow
+        return datetime.strptime(lastrow[1], '%Y-%m-%d %H:%M:%S')
 
 def blink_once():
     """TODO: don't sleep? And NB I hardcoded the GPIO output..."""
@@ -28,41 +28,49 @@ def blink_once():
     sleep(0.2)
     GPIO.output(23, GPIO.LOW)
 
-def record_event(evt_log):
+def record_event(file_name):
     """Logs events; write immediately to file"""
-    dt = datetime.now()
-    print 'All good at time: ' + str(dt)
-    # blink_once()
-    return evt_log
+    with open(file_name, 'a') as appender:
+        appendwriter = csv.writer(appender)
+        appendwriter.writerow(['detect', str(datetime.now())[0:19]])
+    blink_once()
 
-def check_times(evt_log):
+def check_times(file_name):
     """Read most recent line of log, and see if it was within the last 4 hrs"""
-    pass
-
+    last_time = get_last_row_time(file_name)
+    delta_time = datetime.now() - last_time
+    if delta_time.seconds > 14400: # four hours
+        fire_warning()
 
 def fire_warning():
-    """Only fires after timer interval"""
+    """Do something if no activity during time windows"""
     print 'No activity recently. Fired at: ' + str(datetime.now())
 
 if __name__ == '__main__':
+
+    file_name = 'logs/log' + str(datetime.now())[0:10] + '.csv'
+
+    with open(file_name, 'w') as new_log:
+        new_writer = csv.writer(new_log)
+        new_writer.writerow(['event_name', 'event_time'])
+    
     GPIO.setmode(GPIO.BCM)
 
     in_channels = [18] # IR receiver
     out_channels = [23] # LED indicating passage
 
-    GPIO.setup(in_channels, GPIO.IN, pull_up_down = GPIO.PUD_UP)
-    GPIO.setup(out_channels, GPIO.OUT, pull_up_down = GPIO.PUD_DOWN) 
+    GPIO.setup(in_channels, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(out_channels, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
 
     #lame-o way of getting around not passing extra args to callback
     #
-    callback = lambda channel, event_log=log_today: record_event(event_log)
+    callback = lambda channel, file_name: record_event(file_name)
     GPIO.add_event_detect(in_channels, GPIO.FALLING,
-                          callback=callback,
+                          callback=record_event,
                           bouncetime=200)
 
-    event_log = []
-
-    schedule.every().minute.do(write_events_elsewhere, evt_log=event_log)
+    schedule.every().day.at("09:00").do(check_times, file_name=file_name)
+    schedule.every().day.at("20:00").do(check_times, file_name=file_name)
 
     try:
         # spin wheels unless ctrl+c
