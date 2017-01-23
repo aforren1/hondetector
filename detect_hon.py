@@ -10,6 +10,7 @@ out_pin -> LED (long leg) -> LED (short leg) ->
 IR Receiver input:
 signal wire -> (10kOhm resistor if no internal pullup)  -> in_pin
 """
+import os.path
 from datetime import datetime
 from time import sleep
 import csv
@@ -48,12 +49,13 @@ def fire_warning():
 
 if __name__ == '__main__':
 
-    file_name = 'logs/log' + str(datetime.now())[0:10] + '.csv'
+    file_name = 'logs/honlog.csv'
 
-    with open(file_name, 'w') as new_log:
-        new_writer = csv.writer(new_log)
-        new_writer.writerow(['event_name', 'event_time'])
-    
+    if not os.path.isfile(file_name):
+        with open(file_name, 'w') as new_log:
+            new_writer = csv.writer(new_log)
+            new_writer.writerow(['event_name', 'event_time'])
+
     GPIO.setmode(GPIO.BCM)
 
     in_channels = [18] # IR receiver
@@ -70,7 +72,7 @@ if __name__ == '__main__':
                           bouncetime=200)
 
     schedule.every().day.at("09:00").do(check_times, file_name=file_name)
-    schedule.every().day.at("20:00").do(check_times, file_name=file_name)
+    schedule.every().day.at("22:00").do(check_times, file_name=file_name)
 
     try:
         # spin wheels unless ctrl+c
