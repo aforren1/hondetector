@@ -1,7 +1,7 @@
 import requests
 import os
 
-class AlertSMS:
+class AlertEmail:
 
 	disabled = False
 	mailgun_key = None
