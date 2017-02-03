@@ -19,19 +19,19 @@ class AlertSMS:
 			print("Cannot instantiate SMS library; please set the environment variable NEXMO_API_SECRET and restart hondetector.")
 			return
 
-		if 'HONDETECTOR_FROM' not in os.environ:
+		if 'HONDETECTOR_SMS_FROM' not in os.environ:
 			self.disabled = True
-			print("Cannot send SMS messages; please set the environment variable HONDETECTOR_FROM and restart hondetector.")
+			print("Cannot send SMS messages; please set the environment variable HONDETECTOR_SMS_FROM and restart hondetector.")
 			return
 		else:
-			self.number_from = os.environ['HONDETECTOR_FROM']
+			self.number_from = os.environ['HONDETECTOR_SMS_FROM']
 
-		if 'HONDETECTOR_TO' not in os.environ:
+		if 'HONDETECTOR_SMS_TO' not in os.environ:
 			self.disabled = True
-			print("Cannot send SMS messages; please set the environment variable HONDETECTOR_TO and restart hondetector.")
+			print("Cannot send SMS messages; please set the environment variable HONDETECTOR_SMS_TO and restart hondetector.")
 			return
 		else:
-			self.number_to = os.environ['HONDETECTOR_TO']
+			self.number_to = os.environ['HONDETECTOR_SMS_TO']
 
 
 		self.client = nexmo.Client()
