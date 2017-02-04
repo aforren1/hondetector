@@ -51,12 +51,12 @@ def fire_warning(notes, last_time, delta_time):
               '). Previous trigger at ' +
               str(last_time) + ', which was ' + str(delta_time) + ' ago.'
     print(message)
-    notes[0].sendMessage(message)
-    notes[1].sendMessage(message)
+    #notes[0].sendMessage(message)
+    #notes[1].sendMessage(message)
 
 if __name__ == '__main__':
 
-    file_name = 'logs/honlog.csv'
+    file_name = '/home/pi/Desktop/hondetector/logs/honlog.csv'
     if not os.path.isdir('logs'):
         os.makedirs('logs')
     
