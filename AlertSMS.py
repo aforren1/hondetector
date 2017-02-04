@@ -37,7 +37,7 @@ class AlertSMS:
 		self.client = nexmo.Client()
 
 	def sendMessage(self, message):
-		if self.disabled == True:
+		if self.disabled:
 			return
 
 		response = self.client.send_message({

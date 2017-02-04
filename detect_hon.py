@@ -16,6 +16,8 @@ from time import sleep
 import csv
 import schedule
 import RPi.GPIO as GPIO
+import AlertEmail
+import AlertSMS
 
 def get_last_row_time(file_name):
     with open(file_name, 'r') as f:
@@ -25,9 +27,9 @@ def get_last_row_time(file_name):
 
 def blink_once():
     """TODO: don't sleep? And NB I hardcoded the GPIO output..."""
-    GPIO.output(23, GPIO.HIGH)
+    GPIO.output(11, GPIO.HIGH)
     sleep(0.2)
-    GPIO.output(23, GPIO.LOW)
+    GPIO.output(11, GPIO.LOW)
 
 def record_event(file_name):
     """Logs events; write immediately to file"""
@@ -36,16 +38,21 @@ def record_event(file_name):
         appendwriter.writerow(['detect', str(datetime.now())[0:19]])
     blink_once()
 
-def check_times(file_name):
+def check_times(file_name, hrs_previous, notes):
     """Read most recent line of log, and see if it was within the last 4 hrs"""
     last_time = get_last_row_time(file_name)
     delta_time = datetime.now() - last_time
-    if delta_time.seconds > 14400: # four hours
-        fire_warning()
+    if delta_time.seconds > hrs_previous * 60 * 60:
+        fire_warning(notes, last_time, delta_time)
 
-def fire_warning():
+def fire_warning(notes, last_time, delta_time):
     """Do something if no activity during time windows"""
-    print 'No activity recently. Fired at: ' + str(datetime.now())
+    message = 'Hon not detected recently (current time ' + str(datetime.now()) +
+              '). Previous trigger at ' +
+              str(last_time) + ', which was ' + str(delta_time) + ' ago.'
+    print(message)
+    notes[0].sendMessage(message)
+    notes[1].sendMessage(message)
 
 if __name__ == '__main__':
 
@@ -58,23 +65,31 @@ if __name__ == '__main__':
             new_writer = csv.writer(new_log)
             new_writer.writerow(['event_name', 'event_time'])
 
-    GPIO.setmode(GPIO.BCM)
+    GPIO.setmode(GPIO.BOARD)
 
-    in_channels = [18] # IR receiver
-    out_channels = [23] # LED indicating passage
+    in_channels = [7] # IR receiver
+    out_channels = [11] # LED indicating passage
 
-    GPIO.setup(in_channels, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(in_channels, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
     GPIO.setup(out_channels, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
 
     #lame-o way of getting around not passing extra args to callback
     #
     callback = lambda channel, file_name: record_event(file_name)
-    GPIO.add_event_detect(in_channels, GPIO.FALLING,
+    GPIO.add_event_detect(in_channels, GPIO.RISING,
                           callback=record_event,
-                          bouncetime=200)
+                          bouncetime=500)
+    # Make notifiers
+    sms = AlertSMS()
+    email = AlertEmail()
+    notifiers = [sms, email]
 
-    schedule.every().day.at("09:00").do(check_times, file_name=file_name)
-    schedule.every().day.at("22:00").do(check_times, file_name=file_name)
+    schedule.every().day.at("09:00").do(check_times, file_name=file_name, 
+                                        hrs_previous=4, notes=notifiers)
+    schedule.every().day.at("15:00").do(check_times, file_name=file_name, 
+                                        hrs_previous=8, notes=notifiers)
+    schedule.every().day.at("22:00").do(check_times, file_name=file_name, 
+                                        hrs_previous=4, notes=notifiers)
 
     try:
         # spin wheels unless ctrl+c
