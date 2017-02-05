@@ -57,8 +57,8 @@ def fire_warning(notes, last_time, delta_time, file_name):
     with open(file_name, 'a') as appender:
         appendwriter = csv.writer(appender)
         appendwriter.writerow(['warning', now])
-    #notes[0].sendMessage(message)
-    #notes[1].sendMessage(message)
+    notes[0].sendMessage(message)
+    notes[1].sendMessage(message)
 
 if __name__ == '__main__':
 
@@ -83,9 +83,9 @@ if __name__ == '__main__':
                           callback=record_event,
                           bouncetime=1000)
     # Make notifiers
-    #sms = AlertSMS()
-    #email = AlertEmail()
-    #notifiers = [sms, email]
+    sms = AlertSMS()
+    email = AlertEmail()
+    notifiers = [sms, email]
 
     schedule.every().day.at("09:00").do(check_times, file_name=file_name, 
                                         hrs_previous=4, notes=notifiers)
