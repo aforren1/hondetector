@@ -31,11 +31,14 @@ def blink_once():
     sleep(0.2)
     GPIO.output(11, GPIO.LOW)
 
-def record_event(file_name):
+def record_event():
     """Logs events; write immediately to file"""
+    file_name = '/var/log/honlogs/honlog.csv'
+    now = str(datetime.now())[0:19]
+    print('Detection at: ' + now)
     with open(file_name, 'a') as appender:
         appendwriter = csv.writer(appender)
-        appendwriter.writerow(['detect', str(datetime.now())[0:19]])
+        appendwriter.writerow(['detect', now])
     blink_once()
 
 def check_times(file_name, hrs_previous, notes):
@@ -43,22 +46,25 @@ def check_times(file_name, hrs_previous, notes):
     last_time = get_last_row_time(file_name)
     delta_time = datetime.now() - last_time
     if delta_time.seconds > hrs_previous * 60 * 60:
-        fire_warning(notes, last_time, delta_time)
+        fire_warning(notes, last_time, delta_time, file_name)
 
-def fire_warning(notes, last_time, delta_time):
+def fire_warning(notes, last_time, delta_time, file_name):
     """Do something if no activity during time windows"""
-    message = 'Hon not detected recently (current time ' + str(datetime.now()) +
+    message = ('Hon not detected recently (current time ' + str(datetime.now()) +
               '). Previous trigger at ' +
-              str(last_time) + ', which was ' + str(delta_time) + ' ago.'
+              str(last_time) + ', which was ' + str(delta_time) + ' ago.')
     print(message)
+    with open(file_name, 'a') as appender:
+        appendwriter = csv.writer(appender)
+        appendwriter.writerow(['warning', now])
     #notes[0].sendMessage(message)
     #notes[1].sendMessage(message)
 
 if __name__ == '__main__':
 
-    file_name = '/home/pi/Desktop/hondetector/logs/honlog.csv'
-    if not os.path.isdir('logs'):
-        os.makedirs('logs')
+    file_name = '/var/log/honlogs/honlog.csv'
+    if not os.path.isdir('/var/log/honlogs'):
+        os.makedirs('/var/log/honlogs')
     
     if not os.path.isfile(file_name):
         with open(file_name, 'w') as new_log:
@@ -67,22 +73,19 @@ if __name__ == '__main__':
 
     GPIO.setmode(GPIO.BOARD)
 
-    in_channels = [7] # IR receiver
-    out_channels = [11] # LED indicating passage
+    in_channels = 7 # IR receiver
+    out_channels = 11 # LED indicating passage
 
     GPIO.setup(in_channels, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(out_channels, GPIO.OUT, pull_up_down=GPIO.PUD_DOWN)
+    GPIO.setup(out_channels, GPIO.OUT)
 
-    #lame-o way of getting around not passing extra args to callback
-    #
-    callback = lambda channel, file_name: record_event(file_name)
     GPIO.add_event_detect(in_channels, GPIO.RISING,
                           callback=record_event,
-                          bouncetime=500)
+                          bouncetime=1000)
     # Make notifiers
-    sms = AlertSMS()
-    email = AlertEmail()
-    notifiers = [sms, email]
+    #sms = AlertSMS()
+    #email = AlertEmail()
+    #notifiers = [sms, email]
 
     schedule.every().day.at("09:00").do(check_times, file_name=file_name, 
                                         hrs_previous=4, notes=notifiers)

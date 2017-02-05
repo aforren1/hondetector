@@ -1,3 +1,5 @@
 *.save
 *.csv
 *.vscode
+venv/
+*.pyc
