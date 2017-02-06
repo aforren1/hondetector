@@ -44,7 +44,7 @@ class AlertEmail:
 
 		response = requests.post('https://api.mailgun.net/v3/' + self.mailgun_domain + '/messages',
 			auth=("api", self.mailgun_key),
-			files=(["attachment", open('/var/log/honlogs/honlog.csv')]),
+			files=[("attachment", open('/var/log/honlogs/honlog.csv'))],
 			data={
 				"from": self.address_from,
 				"to": [self.address_to],
