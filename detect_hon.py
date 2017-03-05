@@ -16,8 +16,8 @@ from time import sleep
 import csv
 import schedule
 import RPi.GPIO as GPIO
-import AlertEmail
-import AlertSMS
+from AlertEmail import AlertEmail
+from AlertSMS import AlertSMS
 
 def get_last_row_time(file_name):
     with open(file_name, 'r') as f:
