@@ -19,6 +19,4 @@ sudo ntpd -gq
 sudo service ntp start
 
 # start python script
-cd /home/pi/Desktop/hondetector
-source venv/bin/activate
-sudo python detect_hon.py
+sudo lxterminal -e python3 /home/pi/hondetector/detect_hon.py
