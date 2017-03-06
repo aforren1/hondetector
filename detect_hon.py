@@ -25,12 +25,6 @@ def get_last_row_time(file_name):
         for lastrow in csv.reader(f): pass
         return datetime.strptime(lastrow[1], '%Y-%m-%d %H:%M:%S')
 
-def blink_once():
-    """TODO: don't sleep? And NB I hardcoded the GPIO output..."""
-    GPIO.output(11, GPIO.HIGH)
-    sleep(0.2)
-    GPIO.output(11, GPIO.LOW)
-
 def record_event():
     """Logs events; write immediately to file"""
     file_name = '/var/log/honlogs/honlog.csv'
@@ -39,7 +33,6 @@ def record_event():
     with open(file_name, 'a') as appender:
         appendwriter = csv.writer(appender)
         appendwriter.writerow(['detect', now])
-    blink_once()
 
 def check_times(file_name, hrs_previous, notes):
     """Read most recent line of log, and see if it was within the last 4 hrs"""
@@ -74,12 +67,10 @@ if __name__ == '__main__':
     GPIO.setmode(GPIO.BOARD)
 
     in_channels = 7 # IR receiver
-    out_channels = 11 # LED indicating passage
 
-    GPIO.setup(in_channels, GPIO.IN, pull_up_down=GPIO.PUD_DOWN)
-    GPIO.setup(out_channels, GPIO.OUT)
+    GPIO.setup(in_channels, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-    GPIO.add_event_detect(in_channels, GPIO.RISING,
+    GPIO.add_event_detect(in_channels, GPIO.FALLING,
                           callback=record_event,
                           bouncetime=1000)
     # Make notifiers
